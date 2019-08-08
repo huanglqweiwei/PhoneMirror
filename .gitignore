@@ -4,3 +4,5 @@
 /out
 local.properties
 /phoneMirrorLibs
+.DS_Store
+/src/.DS_Store
