@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+}
+
+group 'com.hlq.mobile'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.6
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile files('libs/ddmlib.jar')
+//    compile 'com.android.tools.ddms:ddmlib:24.2.3'
+}
+jar {
+    archiveName = "phone-mirror.jar"
+
+    from {
+        configurations.runtime.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    manifest {
+        attributes 'Main-Class': 'com.hlq.mobile.Main'
+    }
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+}
