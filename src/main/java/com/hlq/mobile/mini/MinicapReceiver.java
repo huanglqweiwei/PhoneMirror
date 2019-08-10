@@ -25,7 +25,7 @@ public class MinicapReceiver  implements Runnable{
     private CountDownLatch mLatch;
     private SocketChannel mChannel;
     private int mPid;
-    private int mWidth;
+    private int mHeight = Mirror.HEIGHT;
 
     public MinicapReceiver(IDevice iDevice ,Callback callback ,int port){
         mDevice = iDevice;
@@ -84,6 +84,12 @@ public class MinicapReceiver  implements Runnable{
     public Process prepareMinicap() {
         String sdk = mDevice.getProperty("ro.build.version.sdk");
         String abi = mDevice.getProperty("ro.product.cpu.abi");
+        if (Tools.isEmpty(sdk)) {
+            sdk = Tools.executeShellCommand(mDevice,"getprop ro.build.version.sdk").trim();
+        }
+        if (Tools.isEmpty(abi)){
+            abi = Tools.executeShellCommand(mDevice,"getprop ro.product.cpu.abi").trim();
+        }
         Log.d(TAG,"mDevice.getProperty : sdk = " + sdk + " abi = " + abi);
         String minicapLibPath = Tools.getMinicapLibPath();
         String minicapLib = minicapLibPath + "aosp" + File.separator + "libs" + File.separator + "android-" + sdk + File.separator + abi + File.separator + "minicap.so";
@@ -104,7 +110,7 @@ public class MinicapReceiver  implements Runnable{
 
         try {
             mDevice.createForward(mPort,"minicap", IDevice.DeviceUnixSocketNamespace.ABSTRACT);
-            Process process = Runtime.getRuntime().exec(AndroidBridge.sAdbPath + " -s " + mDevice.getSerialNumber() + " shell LD_LIBRARY_PATH=/data/local/tmp /data/local/tmp/minicap -P "+getDisplaySize(mDevice)+"@"+ Mirror.WIDTH +"x"+Mirror.HEIGHT +"/0");
+            Process process = Runtime.getRuntime().exec(AndroidBridge.sAdbPath + " -s " + mDevice.getSerialNumber() + " shell LD_LIBRARY_PATH=/data/local/tmp /data/local/tmp/minicap -P "+getDisplaySize(mDevice)+"@"+ Mirror.WIDTH +"x"+ mHeight +"/0");
             BufferedReader reader = new BufferedReader(new InputStreamReader(new SequenceInputStream(process.getInputStream(), process.getErrorStream())));
             try {
                 String line;
@@ -140,7 +146,9 @@ public class MinicapReceiver  implements Runnable{
                     String width = matcher.group(1);
                     String height = matcher.group(2);
                     Log.d(TAG, "getDisplaySize : width = " + width + ", height = " + height);
-                    mWidth = Integer.valueOf(width);
+                    if (mCallback != null) {
+                        mHeight = mCallback.onDisplaySize(Integer.parseInt(width), Integer.parseInt(height));
+                    }
                     return width + "x" + height;
                 }
             }catch (Exception e){
@@ -150,9 +158,6 @@ public class MinicapReceiver  implements Runnable{
         return "1080x1920";
     }
 
-    public int getDisplayWidth() {
-        return mWidth;
-    }
 
     public void minicapRecord(Callback callback) {
         try {
@@ -233,5 +238,7 @@ public class MinicapReceiver  implements Runnable{
 
     public interface Callback {
         void updateFrame(byte[] data);
+
+        int onDisplaySize(int width,int height);
     }
 }

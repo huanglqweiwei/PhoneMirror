@@ -114,15 +114,10 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
     }
 
     private int[] convertXY(int x, int y) {
-        if (mTask != null) {
-            if (mScale == 0) {
-                mScale = mTask.getDisplayWidth() * 1.0f / WIDTH;
-            }
-            if (mScale > 0) {
-                x = (int) (x * mScale);
-                y = (int) (y * mScale);
-                return new int[]{x,y};
-            }
+        if (mScale > 0) {
+            x = (int) (x * mScale);
+            y = (int) (y * mScale);
+            return new int[]{x,y};
         }
         return null;
     }
@@ -174,6 +169,16 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
         }
         mJLabel.setIcon(icon);
     }
+
+    @Override
+    public int onDisplaySize(int width, int height) {
+        mScale = width * 1.0f / WIDTH;
+        height = (int) (height /mScale);
+        mJFrame.setSize(WIDTH + 2 , height + 60);
+        mJLabel.setSize(WIDTH,height);
+        return height;
+    }
+
     public void stop(){
         mJLabel.setIcon(null);
         mTask.stop();

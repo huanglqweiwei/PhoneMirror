@@ -81,7 +81,14 @@ public class Tools {
         }
         Log.d(TAG,"*****************************\nadb路径默认使用jar包同路径下的 ：android_tools/bradb.exe\n" +
                 "自定义配置方法：同路径下创建config.properties文件，配置属性：adb.path=adb绝对路径\n*********************************");
-        return userDir + File.separator + "android_tools" + File.separator + "bradb.exe";
+        String os = System.getProperty("os.name");
+        Log.d(TAG,"os = " + os);
+        //TODO:linux
+        String adb = "bradb.exe";
+        if (os != null && os.startsWith("Mac")) {
+            adb = "adb";
+        }
+        return userDir + File.separator + "android_tools" + File.separator + adb;
     }
 
     private static Properties getConfigProperties(String userDir) {

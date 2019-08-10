@@ -20,7 +20,7 @@ dependencies {
 }
 jar {
     archiveName = "phone-mirror.jar"
-
+    destinationDir = file('.')
     from {
         configurations.runtime.collect {
             it.isDirectory() ? it : zipTree(it)
