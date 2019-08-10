@@ -119,16 +119,8 @@ public class Tools {
         return getLocalPath() + File.separator + LIBS_PATH_NAME + File.separator + "minicapLib" + File.separator;
     }
 
-    public static String getMinitouchPath(){
-        return getLocalPath() + File.separator + LIBS_PATH_NAME + File.separator + "minitouch" + File.separator;
-    }
-
     public static void unzipMinicapLib(){
         unzipResLib("minicapLib.zip");
-    }
-
-    public static void unzipMinitouchLib(){
-        unzipResLib("minitouch.zip");
     }
 
     public static void unzipResLib(String resName){

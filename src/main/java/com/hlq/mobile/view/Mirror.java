@@ -2,7 +2,6 @@ package com.hlq.mobile.view;
 
 import com.android.ddmlib.IDevice;
 import com.hlq.mobile.mini.MinicapReceiver;
-import com.hlq.mobile.mini.MinitouchSender;
 import com.hlq.mobile.mini.SingleTouch;
 import com.hlq.mobile.utils.Tools;
 
@@ -20,7 +19,7 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
     public static final int HEIGHT = 640;
     private final int mPort;
     private ImageIcon mNextIcon;
-    private MinitouchSender mMinitouchSender;
+    private SingleTouch mSingleTouch;
     private float mScale;
 
 
@@ -43,15 +42,15 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
                 int x = e.getX();
                 int y = e.getY();
                 int [] xy = convertXY(x, y);
-                if (xy != null && mMinitouchSender != null) {
-                    mMinitouchSender.touchDown(xy[0],xy[1]);
+                if (xy != null && mSingleTouch != null) {
+                    mSingleTouch.touchDown(xy[0],xy[1]);
                 }
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                if (mMinitouchSender != null) {
-                    mMinitouchSender.touchUp();
+                if (mSingleTouch != null) {
+                    mSingleTouch.touchUp();
                 }
             }
 
@@ -67,8 +66,8 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
                 int x = e.getX();
                 int y = e.getY();
                 int [] xy = convertXY(x, y);
-                if (xy != null && mMinitouchSender != null) {
-                    mMinitouchSender.touchMove(xy[0],xy[1]);
+                if (xy != null && mSingleTouch != null) {
+                    mSingleTouch.touchMove(xy[0],xy[1]);
                 }
 
             }
@@ -98,13 +97,13 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
                     long now = System.currentTimeMillis();
                     if (now - preExe > 500) {
                         preExe = now;
-                        if (mMinitouchSender != null) {
-                            mMinitouchSender.keycode(keyCode);
+                        if (mSingleTouch != null) {
+                            mSingleTouch.keycode(keyCode);
                         }
                     }
                 } else {
-                    if (mMinitouchSender != null) {
-                        mMinitouchSender.keycode(keyCode);
+                    if (mSingleTouch != null) {
+                        mSingleTouch.keycode(keyCode);
                     }
                 }
 
@@ -130,11 +129,11 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
             mTask = new MinicapReceiver(device, this,mPort);
             Tools.sExecutor.submit(mTask);
             mJFrame.setVisible(true);
-            if (mMinitouchSender != null) {
-                mMinitouchSender.stop();
+            if (mSingleTouch != null) {
+                mSingleTouch.stop();
             }
-            mMinitouchSender = new SingleTouch();
-            mMinitouchSender.start(device,mTouchPort);
+            mSingleTouch = new SingleTouch();
+            mSingleTouch.start(device,mTouchPort);
         }
     }
 
@@ -142,7 +141,7 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
     private JFrame createJFrame(IDevice device) {
         JFrame jFrame = new JFrame(device.getName());
 
-        jFrame.setSize(WIDTH + 2,HEIGHT +  60);
+        jFrame.setSize(WIDTH,HEIGHT +  60);
         jFrame.addWindowListener(this);
         jFrame.setBackground(Color.WHITE);
         jFrame.setLayout(new BorderLayout());
@@ -174,7 +173,7 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
     public int onDisplaySize(int width, int height) {
         mScale = width * 1.0f / WIDTH;
         height = (int) (height /mScale);
-        mJFrame.setSize(WIDTH + 2 , height + 60);
+        mJFrame.setSize(WIDTH , height + 60);
         mJLabel.setSize(WIDTH,height);
         return height;
     }
@@ -182,8 +181,8 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
     public void stop(){
         mJLabel.setIcon(null);
         mTask.stop();
-        if (mMinitouchSender != null) {
-            mMinitouchSender.stop();
+        if (mSingleTouch != null) {
+            mSingleTouch.stop();
         }
         mJFrame.dispose();
     }

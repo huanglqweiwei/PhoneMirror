@@ -6,10 +6,12 @@ import com.hlq.mobile.utils.Log;
 import com.hlq.mobile.utils.Tools;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.Semaphore;
 
-public class SingleTouch extends  MinitouchSender {
+public class SingleTouch  implements Runnable{
     private static final String TAG = "SingleTouch";
     private Process mProcess;
     private ByteBuffer mBuffer = ByteBuffer.allocate(14);
@@ -18,19 +20,67 @@ public class SingleTouch extends  MinitouchSender {
     private static final byte ACTION_DOWN = 0;
     private static final byte ACTION_UP = 1;
     private static final byte ACTION_MOVE = 2;
+    private boolean mStopped = false;
+    private int mPort;
+    private SocketChannel mChannel;
+    private IDevice mDevice;
 
-    @Override
+    public void start(IDevice device, int port) {
+        mPort = port;
+        mDevice = device;
+        Tools.sExecutor.submit(this);
+        mStopped = false;
+    }
+
     public void stop() {
-        Log.d(TAG,"stop");
-        if (mProcess != null) {
-            mProcess.destroy();
-        }
-        if (mDevice.isOnline()) {
-            Tools.executeShellCommand(mDevice, "rm /data/local/tmp/" + Tools.SINGLETOUCH_APK);
+        if (!mStopped) {
+            mStopped = true;
+            Log.d(TAG,"stop");
+            if (mProcess != null) {
+                mProcess.destroy();
+                mProcess = null;
+            }
+            if (mDevice.isOnline()) {
+                Tools.executeShellCommand(mDevice, "rm /data/local/tmp/" + Tools.SINGLETOUCH_APK);
+            }
         }
     }
 
     @Override
+    public void run() {
+        Semaphore semaphore = new Semaphore(1);
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        if (prepare(semaphore)) {
+        }
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        createSocket();
+    }
+
+    protected void createSocket() {
+        try {
+            mChannel = SocketChannel.open(new InetSocketAddress("127.0.0.1", mPort));
+            mChannel.socket().setKeepAlive(true);
+            mChannel.socket().setTcpNoDelay(true);
+            if (mChannel.finishConnect()) {
+                ByteBuffer buffer = ByteBuffer.allocate(40);
+                int len = mChannel.read(buffer);
+                Log.d(TAG, "read len = " + len);
+                buffer.flip();
+                Log.d(TAG, "received : \n" + new String(buffer.array(), 0, len, "utf-8"));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public boolean prepare(Semaphore semaphore) {
         BufferedReader reader = null;
         try {
@@ -71,13 +121,11 @@ public class SingleTouch extends  MinitouchSender {
     }
 
 
-    @Override
     public void touchDown(int x, int y) {
         sendTouch(x, y, ACTION_DOWN);
 
     }
 
-    @Override
     public void touchMove(int x, int y) {
         sendTouch(x, y, ACTION_MOVE);
     }
@@ -103,7 +151,6 @@ public class SingleTouch extends  MinitouchSender {
         }
     }
 
-    @Override
     public void touchUp() {
         mBuffer.clear();
         mBuffer.putInt(2);
