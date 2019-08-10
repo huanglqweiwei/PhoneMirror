@@ -123,10 +123,6 @@ public class Tools {
         return getLocalPath() + File.separator + LIBS_PATH_NAME + File.separator + "minitouch" + File.separator;
     }
 
-    public static String getsingleTouchPath(){
-        return getLocalPath() + File.separator + LIBS_PATH_NAME + File.separator + "minitouch" + File.separator;
-    }
-
     public static void unzipMinicapLib(){
         unzipResLib("minicapLib.zip");
     }
