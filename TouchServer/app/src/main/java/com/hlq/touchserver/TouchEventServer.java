@@ -18,7 +18,7 @@ public class TouchEventServer {
     private static final byte TYPE_KEYCODE = 1;
     private final ServiceManager mServiceManager;
     private final byte[] lenBytes = new byte[4];
-    private final byte[] contentBytes = new byte[10];
+    private final byte[] contentBytes = new byte[18];
     private final InputStream mInputStream;
     private EventInjector mEventInjector;
 
@@ -60,10 +60,13 @@ public class TouchEventServer {
         }
     }
     private ByteBuffer readByte(byte[] bytes,int length) {
+        if (length > bytes.length) {
+            bytes = new byte[length];
+        }
         try {
             int len;
             int offset = 0;
-            while ((len = mInputStream.read(bytes,offset,length - offset)) > -1 && offset != length){
+            while (offset != length && (len = mInputStream.read(bytes,offset,length - offset)) > -1  ){
                 offset += len;
             }
             if (offset == length) {
@@ -96,7 +99,7 @@ public class TouchEventServer {
 
     private void handleEvent(ByteBuffer buffer) {
         if (mEventInjector == null) {
-            mEventInjector = new EventInjector(mServiceManager.getInputManager());
+            mEventInjector = new EventInjector(mServiceManager.getInputManager(),mServiceManager.getPowerManager());
         }
         byte type = buffer.get();
         if (type == TYPE_MOTION) {
@@ -108,6 +111,9 @@ public class TouchEventServer {
                     break;
                 case MotionEvent.ACTION_UP:
                     mEventInjector.injectInputEvent(action,-1,-1);
+                    break;
+                case MotionEvent.ACTION_SCROLL:
+                    mEventInjector.injectScroll(buffer.getInt(),buffer.getInt(),buffer.getFloat(),buffer.getFloat());
                     break;
             }
         } else if (type == TYPE_KEYCODE){

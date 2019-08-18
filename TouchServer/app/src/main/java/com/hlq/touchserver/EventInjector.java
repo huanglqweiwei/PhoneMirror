@@ -6,15 +6,18 @@ import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import com.hlq.touchserver.wrappers.InputManager;
+import com.hlq.touchserver.wrappers.PowerManager;
 
 public class EventInjector {
     private InputManager mInputManager;
+    private PowerManager mPowerManager;
     private long mLastTime;
     private final MotionEvent.PointerProperties[] pointerProperties = {new MotionEvent.PointerProperties()};
     private final MotionEvent.PointerCoords[] pointerCoords = {new MotionEvent.PointerCoords()};
 
-    public EventInjector(InputManager inputManager) {
+    public EventInjector(InputManager inputManager, PowerManager powerManager) {
         mInputManager = inputManager;
+        this.mPowerManager = powerManager;
 
         MotionEvent.PointerProperties props = pointerProperties[0];
         props.id = 0;
@@ -35,6 +38,10 @@ public class EventInjector {
     void injectInputEvent(int action, int x, int y) {
         long now = SystemClock.uptimeMillis();
         if (action == MotionEvent.ACTION_DOWN) {
+            if (!mPowerManager.isScreenOn()) {
+                injectKeycode(KeyEvent.KEYCODE_POWER);
+                return;
+            }
             mLastTime = now;
         }
         if (x > 0) {
@@ -56,18 +63,17 @@ public class EventInjector {
         return mInputManager.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
     }
 
-    private void setScroll(int hScroll, int vScroll) {
+    private void setScroll(float hScroll, float vScroll) {
         MotionEvent.PointerCoords coords = pointerCoords[0];
         coords.setAxisValue(MotionEvent.AXIS_HSCROLL, hScroll);
         coords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
     }
 
-    private boolean injectScroll(int x, int y, int hScroll, int vScroll) {
-        long now = SystemClock.uptimeMillis();
+    boolean injectScroll(int x, int y, float hScroll, float vScroll) {
 
         setPointerCoords(x,y);
         setScroll(hScroll, vScroll);
-        MotionEvent event = MotionEvent.obtain(mLastTime, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, 0,
+        MotionEvent event = MotionEvent.obtain(mLastTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, 0,
                 0, InputDevice.SOURCE_MOUSE, 0);
         return mInputManager.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
     }

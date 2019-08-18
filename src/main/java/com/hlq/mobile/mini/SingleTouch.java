@@ -14,12 +14,13 @@ import java.util.concurrent.Semaphore;
 public class SingleTouch  implements Runnable{
     private static final String TAG = "SingleTouch";
     private Process mProcess;
-    private ByteBuffer mBuffer = ByteBuffer.allocate(14);
+    private ByteBuffer mBuffer = ByteBuffer.allocate(22);
     private static final byte TYPE_MOTION = 0;
     private static final byte TYPE_KEYCODE = 1;
     private static final byte ACTION_DOWN = 0;
     private static final byte ACTION_UP = 1;
     private static final byte ACTION_MOVE = 2;
+    private static final byte ACTION_SCROLL = 8;
     private boolean mStopped = false;
     private int mPort;
     private SocketChannel mChannel;
@@ -167,5 +168,20 @@ public class SingleTouch  implements Runnable{
         mBuffer.putInt(keycode);
         mBuffer.flip();
         writeBuffer();
+    }
+
+    public void touchScroll(int x, int y, boolean h, int rotation) {
+        mBuffer.clear();
+        mBuffer.putInt(18);
+        mBuffer.put(TYPE_MOTION);
+        mBuffer.put(ACTION_SCROLL);
+        mBuffer.putInt(x);
+        mBuffer.putInt(y);
+        float value = rotation > 0 ? -0.8f : 0.8f;
+        mBuffer.putFloat(h ? value : 0f);
+        mBuffer.putFloat(value);
+        mBuffer.flip();
+        writeBuffer();
+
     }
 }

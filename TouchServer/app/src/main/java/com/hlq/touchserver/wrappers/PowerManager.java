@@ -25,8 +25,9 @@ public final class PowerManager {
     public boolean isScreenOn() {
         try {
             return (Boolean) isScreenOnMethod.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            throw new AssertionError(e);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        return true;
     }
 }

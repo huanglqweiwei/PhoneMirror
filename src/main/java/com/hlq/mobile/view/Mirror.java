@@ -5,20 +5,22 @@ import com.hlq.mobile.mini.MinicapReceiver;
 import com.hlq.mobile.mini.SingleTouch;
 import com.hlq.mobile.utils.Tools;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 public class Mirror implements MinicapReceiver.Callback, WindowListener {
     private static final String TAG = "Mirror";
     private final int mTouchPort;
     private  MinicapReceiver mTask;
-    private final JLabel mJLabel;
+    private final ImageJPanel mJLabel;
     private final JFrame mJFrame;
     public static final int WIDTH = 360;
     public static final int HEIGHT = 640;
     private final int mPort;
-    private ImageIcon mNextIcon;
     private SingleTouch mSingleTouch;
     private float mScale;
 
@@ -31,10 +33,7 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
         mPort = 1700 + index;
         mTouchPort = 1300 + index;
         mJFrame.setLocation(location,location);
-        JPanel jPanel = new JPanel();
-        jPanel.setSize(WIDTH,HEIGHT);
-        jPanel.setLayout(null);
-        mJLabel = new JLabel();
+        mJLabel = new ImageJPanel();
         mJLabel.setSize(WIDTH,HEIGHT);
         mJLabel.addMouseListener(new MouseAdapter() {
             @Override
@@ -54,10 +53,6 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
                 }
             }
 
-            @Override
-            public void mouseWheelMoved(MouseWheelEvent e) {
-
-            }
         });
 
         mJLabel.addMouseMotionListener(new MouseMotionAdapter() {
@@ -73,8 +68,21 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
             }
         });
 
-        jPanel.add(mJLabel);
-        mJFrame.add(jPanel,BorderLayout.CENTER);
+        mJLabel.addMouseWheelListener(new MouseWheelListener() {
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                int wheelRotation = e.getWheelRotation();
+                if (wheelRotation != 0) {
+                    int [] xy = convertXY(e.getX(), e.getY());
+                    if (xy != null && mSingleTouch != null) {
+
+                        mSingleTouch.touchScroll(xy[0],xy[1], (e.getModifiers() & InputEvent.SHIFT_MASK) != 0,wheelRotation);
+                    }
+                }
+            }
+        });
+
+        mJFrame.add(mJLabel,BorderLayout.CENTER);
         addBottomButton();
     }
 
@@ -89,6 +97,7 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
 
     private JButton getJButton(String title, final int keyCode) {
         JButton power = new JButton(title);
+        power.setFocusPainted(false);
         power.addActionListener(new ActionListener() {
             long preExe;
             @Override
@@ -143,7 +152,6 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
 
         jFrame.setSize(WIDTH,HEIGHT +  60);
         jFrame.addWindowListener(this);
-        jFrame.setBackground(Color.WHITE);
         jFrame.setLayout(new BorderLayout());
         jFrame.setResizable(false);
         return jFrame;
@@ -151,22 +159,12 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
 
     @Override
     public void updateFrame(byte[] data) {
-        Image image = Toolkit.getDefaultToolkit().createImage(data);
-        Icon icon = mJLabel.getIcon();
-        if (icon == null) {
-            icon = new ImageIcon(image);
-        } else {
-            if (mNextIcon == null) {
-                mNextIcon = (ImageIcon) icon;
-                icon = new ImageIcon(image);
-            } else {
-                mNextIcon.setImage(image);
-                ImageIcon temp = (ImageIcon) icon;
-                icon = mNextIcon;
-                mNextIcon = temp;
-            }
+        try {
+            Image image = ImageIO.read(new ByteArrayInputStream(data));
+            mJLabel.setImage(image);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        mJLabel.setIcon(icon);
     }
 
     @Override
@@ -179,7 +177,7 @@ public class Mirror implements MinicapReceiver.Callback, WindowListener {
     }
 
     public void stop(){
-        mJLabel.setIcon(null);
+        mJLabel.setImage(null);
         mTask.stop();
         if (mSingleTouch != null) {
             mSingleTouch.stop();
